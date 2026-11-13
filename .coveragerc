@@ -1,0 +1,11 @@
+[run]
+source = backend
+omit =
+    backend/wallet.db
+    */tests/*
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:

@@ -125,7 +125,9 @@ def get_balance(user_id):
 
     if not user:
         return jsonify({
+            "status": "error",
             "error": "User not found",
+            "error_code": "USER_NOT_FOUND",
             "user_id": clean_user_id
         }), 404
 
@@ -133,10 +135,18 @@ def get_balance(user_id):
     balance_rupees = round(balance_paise / 100.0, 2)
 
     return jsonify({
+        "status": "success",
         "user_id": user['user_id'],
         "name": user['name'],
         "balance_paise": balance_paise,
-        "balance_rupees": balance_rupees
+        "balance_rupees": balance_rupees,
+        "balance": balance_rupees,
+        "user": {
+            "user_id": user['user_id'],
+            "name": user['name'],
+            "balance": balance_rupees,
+            "balance_rupees": balance_rupees
+        }
     }), 200
 
 
@@ -158,11 +168,11 @@ def transfer_money():
         try:
             data = request.get_json(force=False, silent=False)
             if not isinstance(data, dict):
-                return jsonify({"error": "Invalid JSON format. Expected JSON object."}), 400
+                return jsonify({"status": "error", "error": "Invalid JSON format. Expected JSON object.", "error_code": "INVALID_JSON"}), 400
         except Exception:
-            return jsonify({"error": "Malformed JSON payload. Please provide valid JSON."}), 400
+            return jsonify({"status": "error", "error": "Malformed JSON payload. Please provide valid JSON.", "error_code": "INVALID_JSON"}), 400
     else:
-        return jsonify({"error": "Missing JSON request body."}), 400
+        return jsonify({"status": "error", "error": "Missing JSON request body.", "error_code": "MISSING_BODY"}), 400
 
     # 2. Extract fields
     raw_txn_id = data.get('transaction_id')
@@ -183,6 +193,8 @@ def transfer_money():
 
     if missing_fields:
         return jsonify({
+            "status": "error",
+            "error_code": "MISSING_FIELD",
             "error": f"Missing required fields: {', '.join(missing_fields)}",
             "required_fields": ["transaction_id", "sender_id", "receiver_id", "amount"],
             "missing": missing_fields
@@ -190,11 +202,11 @@ def transfer_money():
 
     # 4. Validate empty / whitespace strings
     if not isinstance(raw_txn_id, str) or not raw_txn_id.strip():
-        return jsonify({"error": "transaction_id must be a non-empty string."}), 400
+        return jsonify({"status": "error", "error_code": "EMPTY_TRANSACTION_ID", "error": "transaction_id must be a non-empty string."}), 400
     if not isinstance(raw_sender, str) or not raw_sender.strip():
-        return jsonify({"error": "sender_id must be a non-empty string."}), 400
+        return jsonify({"status": "error", "error_code": "EMPTY_SENDER_ID", "error": "sender_id must be a non-empty string."}), 400
     if not isinstance(raw_receiver, str) or not raw_receiver.strip():
-        return jsonify({"error": "receiver_id must be a non-empty string."}), 400
+        return jsonify({"status": "error", "error_code": "EMPTY_RECEIVER_ID", "error": "receiver_id must be a non-empty string."}), 400
 
     transaction_id = raw_txn_id.strip()
     sender_id = raw_sender.strip().upper()
@@ -203,7 +215,7 @@ def transfer_money():
     # 5. Validate amount data type and format
     # Prevent booleans: True/False are subclasses of int in Python!
     if isinstance(raw_amount, bool):
-        return jsonify({"error": "Invalid amount format. Must be a numeric value, not a boolean."}), 400
+        return jsonify({"status": "error", "error_code": "INVALID_DATA_TYPE", "error": "Invalid amount format. Must be a numeric value, not a boolean."}), 400
 
     # Check for non-numeric or malformed amount
     try:
@@ -211,11 +223,11 @@ def transfer_money():
         # Disallow currency symbols or non-numeric characters
         float_val = float(amount_str)
     except (ValueError, TypeError):
-        return jsonify({"error": "Invalid amount format. Must be a valid numeric value."}), 400
+        return jsonify({"status": "error", "error_code": "INVALID_DATA_TYPE", "error": "Invalid amount format. Must be a valid numeric value."}), 400
 
     # Prevent NaN and Infinity
     if math.isnan(float_val) or math.isinf(float_val):
-        return jsonify({"error": "Invalid amount format. Amount cannot be NaN or Infinity."}), 400
+        return jsonify({"status": "error", "error_code": "INVALID_DATA_TYPE", "error": "Invalid amount format. Amount cannot be NaN or Infinity."}), 400
 
     # 6. Validate decimal precision (INR paise: max 2 decimal places)
     if not SIMULATED_FAULTS.get("bypass_decimal_check"):
@@ -223,6 +235,8 @@ def transfer_money():
             decimals = amount_str.split('.')[1]
             if len(decimals) > 2:
                 return jsonify({
+                    "status": "error",
+                    "error_code": "INVALID_DECIMAL_PRECISION",
                     "error": "Invalid decimal precision. Transfer amount cannot have more than 2 decimal places (paise).",
                     "provided_amount": raw_amount
                 }), 400
@@ -231,12 +245,14 @@ def transfer_money():
     try:
         amount_paise = int(round(float_val * 100))
     except (ValueError, OverflowError):
-        return jsonify({"error": "Transfer amount is outside allowable numeric limits."}), 400
+        return jsonify({"status": "error", "error_code": "NUMERIC_OVERFLOW", "error": "Transfer amount is outside allowable numeric limits."}), 400
 
     # 7. Boundary Value Checks
     if not SIMULATED_FAULTS.get("bypass_negative_check"):
         if amount_paise <= 0:
             return jsonify({
+                "status": "error",
+                "error_code": "INVALID_AMOUNT",
                 "error": "Transfer amount must be greater than zero.",
                 "attempted_amount": float_val
             }), 400
@@ -244,6 +260,8 @@ def transfer_money():
         # Minimum valid amount rule (₹1.00 = 100 paise)
         if amount_paise < 100:
             return jsonify({
+                "status": "error",
+                "error_code": "INVALID_AMOUNT",
                 "error": "Minimum transfer amount is ₹1.00 (100 paise).",
                 "attempted_amount_rupees": round(amount_paise / 100.0, 2)
             }), 400
@@ -251,6 +269,8 @@ def transfer_money():
     # Single transaction upper threshold (₹5,00,000 safety limit)
     if amount_paise > 50000000:
         return jsonify({
+            "status": "error",
+            "error_code": "LIMIT_EXCEEDED",
             "error": "Transfer amount exceeds maximum single transaction limit of ₹5,00,000.",
             "attempted_amount_rupees": round(amount_paise / 100.0, 2)
         }), 400
@@ -259,6 +279,8 @@ def transfer_money():
     if not SIMULATED_FAULTS.get("bypass_self_transfer"):
         if sender_id == receiver_id:
             return jsonify({
+                "status": "error",
+                "error_code": "SELF_TRANSFER",
                 "error": "Sender and receiver cannot be the same account.",
                 "sender_id": sender_id,
                 "receiver_id": receiver_id
@@ -266,6 +288,9 @@ def transfer_money():
 
     conn = get_db_connection()
     try:
+        # Acquire immediate write lock for ACID serialization under concurrency
+        conn.execute("BEGIN IMMEDIATE")
+
         # 9. Duplicate Transaction ID Check (Idempotency - HTTP 409 Conflict)
         if not SIMULATED_FAULTS.get("bypass_duplicate_check"):
             existing_txn = conn.execute(
@@ -274,8 +299,11 @@ def transfer_money():
             ).fetchone()
 
             if existing_txn:
+                conn.rollback()
                 conn.close()
                 return jsonify({
+                    "status": "error",
+                    "error_code": "DUPLICATE_TRANSACTION_ID",
                     "error": "Duplicate transaction: A transaction with this transaction_id already exists.",
                     "transaction_id": transaction_id,
                     "existing_status": existing_txn['status']
@@ -288,8 +316,11 @@ def transfer_money():
         ).fetchone()
 
         if not sender:
+            conn.rollback()
             conn.close()
             return jsonify({
+                "status": "error",
+                "error_code": "SENDER_NOT_FOUND",
                 "error": "Sender not found.",
                 "sender_id": sender_id
             }), 404
@@ -301,8 +332,11 @@ def transfer_money():
         ).fetchone()
 
         if not receiver:
+            conn.rollback()
             conn.close()
             return jsonify({
+                "status": "error",
+                "error_code": "RECEIVER_NOT_FOUND",
                 "error": "Receiver not found.",
                 "receiver_id": receiver_id
             }), 404
@@ -310,8 +344,11 @@ def transfer_money():
         # 12. Sender Available Balance Check (HTTP 400 Bad Request)
         sender_balance = sender['balance_paise']
         if sender_balance < amount_paise:
+            conn.rollback()
             conn.close()
             return jsonify({
+                "status": "error",
+                "error_code": "INSUFFICIENT_FUNDS",
                 "error": "Insufficient wallet balance.",
                 "available_balance_rupees": round(sender_balance / 100.0, 2),
                 "attempted_amount_rupees": round(amount_paise / 100.0, 2)
@@ -319,8 +356,6 @@ def transfer_money():
 
         # 13. Atomic Transaction Execution
         timestamp_str = datetime.now().isoformat()
-
-        conn.execute("BEGIN IMMEDIATE")
 
         # Deduct sender balance
         conn.execute(
@@ -348,7 +383,13 @@ def transfer_money():
         conn.close()
 
         return jsonify({
+            "status": "success",
             "message": "Transfer completed successfully.",
+            "transaction_id": transaction_id,
+            "sender_balance": round(new_sender_balance / 100.0, 2),
+            "receiver_balance": round(new_receiver_balance / 100.0, 2),
+            "sender_new_balance_rupees": round(new_sender_balance / 100.0, 2),
+            "receiver_new_balance_rupees": round(new_receiver_balance / 100.0, 2),
             "transaction": {
                 "transaction_id": transaction_id,
                 "sender_id": sender_id,
@@ -359,14 +400,26 @@ def transfer_money():
                 "amount_rupees": round(amount_paise / 100.0, 2),
                 "status": "SUCCESS",
                 "timestamp": timestamp_str
-            },
-            "sender_new_balance_rupees": round(new_sender_balance / 100.0, 2),
-            "receiver_new_balance_rupees": round(new_receiver_balance / 100.0, 2)
+            }
         }), 200
 
+    except sqlite3.IntegrityError as e:
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
+        return jsonify({
+            "error": "Database constraint violation or insufficient wallet balance.",
+            "error_code": "INSUFFICIENT_FUNDS"
+        }), 400
+
     except Exception as e:
-        conn.rollback()
-        conn.close()
+        try:
+            conn.rollback()
+            conn.close()
+        except Exception:
+            pass
         return jsonify({
             "error": "Internal transaction failure. Database rollback executed.",
             "details": "The transaction could not be processed and no balances were changed."
@@ -439,6 +492,59 @@ def get_user_transactions(user_id):
         "count": len(transactions),
         "transactions": transactions
     }), 200
+
+
+@app.route('/api/accounts', methods=['GET', 'OPTIONS'])
+def get_accounts_alias():
+    """Returns all accounts formatted for testing and dashboard views."""
+    if request.method == 'OPTIONS':
+        return '', 200
+    conn = get_db_connection()
+    users = conn.execute("SELECT user_id, name, balance_paise FROM users ORDER BY user_id").fetchall()
+    conn.close()
+    result = []
+    for u in users:
+        result.append({
+            "user_id": u['user_id'],
+            "name": u['name'],
+            "balance_paise": u['balance_paise'],
+            "balance_rupees": round(u['balance_paise'] / 100.0, 2),
+            "balance": round(u['balance_paise'] / 100.0, 2)
+        })
+    return jsonify({"status": "success", "users": result, "count": len(result)}), 200
+
+
+@app.route('/api/transactions', methods=['GET', 'OPTIONS'])
+def get_all_transactions():
+    """Returns all transactions across all users."""
+    if request.method == 'OPTIONS':
+        return '', 200
+    conn = get_db_connection()
+    rows = conn.execute("""
+        SELECT t.transaction_id, t.sender_id, s.name AS sender_name,
+               t.receiver_id, r.name AS receiver_name,
+               t.amount_paise, t.status, t.timestamp
+        FROM transactions t
+        LEFT JOIN users s ON t.sender_id = s.user_id
+        LEFT JOIN users r ON t.receiver_id = r.user_id
+        ORDER BY t.timestamp DESC
+    """).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        result.append({
+            "transaction_id": r['transaction_id'],
+            "sender_id": r['sender_id'],
+            "sender_name": r['sender_name'],
+            "receiver_id": r['receiver_id'],
+            "receiver_name": r['receiver_name'],
+            "amount_paise": r['amount_paise'],
+            "amount_rupees": round(r['amount_paise'] / 100.0, 2),
+            "amount": round(r['amount_paise'] / 100.0, 2),
+            "status": r['status'],
+            "timestamp": r['timestamp']
+        })
+    return jsonify({"status": "success", "transactions": result, "count": len(result)}), 200
 
 
 # -------------------------------------------------------------
@@ -772,6 +878,7 @@ def reset_database_endpoint():
 
 
 if __name__ == '__main__':
+    host = os.environ.get('HOST', '127.0.0.1')
     port = int(os.environ.get('PORT', 5001))
-    print(f"Starting WalletPay backend server on http://127.0.0.1:{port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    print(f"Starting WalletPay backend server on http://{host}:{port}")
+    app.run(host=host, port=port, debug=False)

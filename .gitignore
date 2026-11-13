@@ -41,3 +41,10 @@ reports/postman_run_result.json
 
 # Logs
 *.log
+
+# Pytest & Coverage
+.coverage
+.coverage.*
+.pytest_cache/
+reports/coverage_html/
+htmlcov/

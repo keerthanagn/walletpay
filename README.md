@@ -1,13 +1,15 @@
 # WalletPay: Automated API Quality Assurance & Transaction Validation of a Digital Wallet
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1%2B-black.svg)](https://flask.palletsprojects.com/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite3-green.svg)](https://sqlite.org/)
+[![CI Pipeline](https://github.com/keerthanagn/walletpay/actions/workflows/ci.yml/badge.svg)](https://github.com/keerthanagn/walletpay/actions)
+[![Pytest Suite](https://img.shields.io/badge/Pytest-46%20Passed-brightgreen.svg)]()
+[![Code Coverage](https://img.shields.io/badge/Coverage-81%25%20(100%25%20DB)-success.svg)]()
+[![Security Bandit](https://img.shields.io/badge/SAST-Bandit%20Clean-blue.svg)]()
+[![Concurrency](https://img.shields.io/badge/Concurrency-Zero%20Double--Spending-blueviolet.svg)]()
 [![Postman](https://img.shields.io/badge/Testing-Postman%20v11-orange.svg)](https://www.postman.com/)
-[![Tests](https://img.shields.io/badge/Test%20Suite-39%2F39%20Passed-brightgreen.svg)]()
+[![Test Suite](https://img.shields.io/badge/CLI%20Suite-39%2F39%20Passed-brightgreen.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Cross--Platform-lightgrey.svg)]()
 
-A comprehensive, production-grade Software Testing and Quality Assurance project built for academic evaluation, viva voce defense, and real-world financial validation. **WalletPay** demonstrates automated REST API testing, boundary value analysis (BVA), input validation, integration testing, database consistency & invariant conservation, performance latency benchmarking, and vulnerability deterrence.
+A comprehensive, production-grade Software Testing and Quality Assurance project built for academic evaluation, viva voce defense, and real-world financial validation. **WalletPay** demonstrates automated REST API testing, boundary value analysis (BVA), input validation, integration testing, database consistency & invariant conservation, multi-threaded concurrency race condition testing, performance latency benchmarking, DevSecOps SAST security scanning, and GitHub Actions CI/CD automation.
 
 ---
 
@@ -298,16 +300,68 @@ All endpoints accept and return JSON.
 ### Q5: How is SQL Injection prevented?
 > **Answer:** All SQL queries use parameterized placeholders (`?`). The SQLite database engine compiles the SQL command structure before binding parameters as literal data, preventing strings like `' OR '1'='1` or `'; DROP TABLE; --` from ever executing as SQL instructions.
 
+### Q6: How does the system handle concurrent transfers and race conditions (Double Spending)?
+> **Answer:** In high-volume financial transactions, two simultaneous transfers could read the same initial balance before either commits, leading to overdrafts (the classic "double-spending" bug). WalletPay prevents this by acquiring SQLite write locks via `BEGIN IMMEDIATE` prior to querying balance, combined with a table-level integrity check (`CHECK (balance_paise >= 0)`). Under 50 simultaneous threads trying to transfer ₹500 from a ₹5,000 balance, exactly 10 succeed, 40 fail, and Alice's balance remains strictly ₹0.00 with zero overdraft.
+
+### Q7: What role does Static Application Security Testing (SAST) play?
+> **Answer:** Using **Bandit**, we perform automated static analysis on the Python backend to scan for common CWE security vulnerabilities (such as binding to all interfaces, hardcoded secrets, SQL formatting flaws, and unsafe deserialization) before code is merged or deployed.
+
 ---
 
-## 10. Project Directory Structure
+## 10. Advanced Software Testing Execution Guide
+
+### A. Run White-Box Pytest Suite & Generate HTML Coverage
+```bash
+python -m pytest --cov=backend --cov-report=term-missing --cov-report=html:reports/coverage_html
+```
+* **Results:** 46 passed tests across Unit, Integration, BVA, Concurrency, and Security.
+* **HTML Report:** Open `reports/coverage_html/index.html` in your browser for an interactive line-by-line coverage view.
+
+### B. Run Concurrency & Double-Spending Race Condition Test
+```bash
+python -m pytest tests/test_concurrency.py -v
+```
+Fires 50 simultaneous concurrent threads against Alice's ₹5,000 balance to rigorously prove ACID serialization and verify zero double-spending.
+
+### C. Run Real-Time Concurrency Load Testing with Locust
+1. Start the Flask backend in one terminal:
+   ```bash
+   python backend/app.py
+   ```
+2. In a second terminal, launch Locust:
+   ```bash
+   locust -f locustfile.py --host=http://127.0.0.1:5001
+   ```
+3. Open `http://127.0.0.1:8089` in your web browser. Enter number of users (e.g. 50) and ramp-up rate (e.g. 5) to watch real-time RPS and response-time graphs.
+
+### D. Run Bandit DevSecOps Security Scan (SAST)
+```bash
+python -m bandit -r backend -ll
+```
+Scans `backend/` for Medium and High severity security issues (0 vulnerabilities detected).
+
+### E. Continuous Integration (GitHub Actions)
+The repository includes `.github/workflows/ci.yml`. On every `git push` to `main`, GitHub Actions automatically:
+1. Sets up Python 3.11 environment.
+2. Installs dependencies from `backend/requirements.txt`.
+3. Executes Bandit SAST Security Scan.
+4. Executes the 46-test Pytest suite with code coverage.
+5. Executes the 39-test CLI regression runner.
+6. Publishes status badges and job summaries on GitHub.
+
+---
+
+## 11. Project Directory Structure
 
 ```text
 digital-wallet-project-main/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # GitHub Actions automated QA & Security pipeline
 ├── backend/
 │   ├── app.py                     # Flask REST APIs, input validation & fault injector
 │   ├── database.py                # SQLite connection, schema & reset logic
-│   ├── requirements.txt           # Python dependencies (Flask, requests)
+│   ├── requirements.txt           # Python dependencies (Flask, requests, pytest, locust, bandit)
 │   └── wallet.db                  # Embedded SQLite database file
 ├── frontend/
 │   ├── index.html                 # Complete responsive 4-section UI dashboard
@@ -319,11 +373,25 @@ digital-wallet-project-main/
 ├── reports/
 │   ├── test_summary.json          # Machine-readable test execution metrics
 │   ├── test_execution_summary.txt # Human-readable formatted test summary
-│   └── postman_test_report.html   # HTML test report
+│   ├── postman_test_report.html   # HTML test report
+│   └── coverage_html/             # Interactive HTML Code Coverage Dashboard
 ├── scripts/
 │   ├── run_test_suite.py          # Standalone Python CLI test runner (39 tests)
 │   ├── reset_database.py          # Database reset utility
 │   ├── execute_tests.py           # Test runner wrapper
 │   └── run_tests.sh               # Shell script runner
+├── tests/
+│   ├── conftest.py                # Pytest isolated database fixtures & client
+│   ├── test_api_functional.py     # Functional & Happy Path unit/integration tests
+│   ├── test_boundary_values.py    # Boundary Value Analysis (BVA) test suite
+│   ├── test_input_validation.py   # Type checking & negative test suite
+│   ├── test_concurrency.py        # 50-thread race condition & double-spending test
+│   ├── test_database_consistency.py # ACID & Conservation of Wealth invariant tests
+│   ├── test_security_sast.py      # SQLi, XSS & security header tests
+│   └── test_additional_endpoints.py # Performance & auxiliary route tests
+├── locustfile.py                  # Locust load & performance stress testing script
+├── pytest.ini                     # Pytest configuration settings
+├── .coveragerc                    # Code coverage configuration
+├── .gitignore                     # Git exclusion rules
 └── README.md                      # Comprehensive documentation & viva guide
 ```

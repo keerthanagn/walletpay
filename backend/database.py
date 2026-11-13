@@ -7,12 +7,15 @@ import sqlite3
 import os
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wallet.db')
+def get_db_path():
+    return os.environ.get('WALLETPAY_DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wallet.db'))
+
+DB_PATH = get_db_path()
 
 
 def get_db_connection():
     """Create a database connection with row factory enabled."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path(), timeout=15.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
