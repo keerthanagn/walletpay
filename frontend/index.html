@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WalletPay — Automated API Testing & Transaction Validation System</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="4"></rect>
+            <path d="M16 10h.01"></path>
+            <path d="M2 10h20"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">WalletPay</span>
+          <span class="brand-subtitle">Automated API Testing & Transaction Validation</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="active-user-badge">
+          <span class="user-avatar" id="headerAvatar">A</span>
+          <span class="user-greeting" id="headerGreeting">Active: <strong>Alice</strong> (U001)</span>
+        </div>
+        <button id="refreshBtn" class="btn-secondary btn-icon" title="Refresh Wallet Data">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div id="notificationArea" class="notification-container"></div>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    
+    <!-- SECTION A: DASHBOARD -->
+    <section class="section card dashboard-section">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Section A</span>
+          <h2 class="section-title">Wallet Overview</h2>
+        </div>
+        <div class="user-selector-wrapper">
+          <label for="viewUserSelect">View Account:</label>
+          <select id="viewUserSelect" class="form-select user-toggle">
+            <option value="U001" selected>Alice (U001)</option>
+            <option value="U002">Bob (U002)</option>
+          </select>
+          <button id="openAddUserBtn" class="btn-secondary btn-compact" title="Add New Wallet User">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add User
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Balance Card -->
+        <div class="balance-card">
+          <div class="balance-card-bg-circle circle-1"></div>
+          <div class="balance-card-bg-circle circle-2"></div>
+          <div class="balance-card-content">
+            <div class="balance-label-row">
+              <span class="balance-label">Current Wallet Balance</span>
+              <span class="balance-chip">Active</span>
+            </div>
+            <div class="balance-amount" id="currentBalanceDisplay">₹5,000.00</div>
+            <div class="balance-footer">
+              <span class="balance-account-id" id="accountNumberDisplay">Account ID: U001</span>
+              <span class="balance-updated" id="lastUpdatedDisplay">Updated just now</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Details Card -->
+        <div class="user-details-card">
+          <h3 class="card-subtitle">User Account Details</h3>
+          <div class="details-list">
+            <div class="detail-item">
+              <span class="detail-label">Account Holder</span>
+              <span class="detail-value" id="accountName">Alice</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">User Identifier</span>
+              <span class="detail-value" id="accountUserId">U001</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Wallet Status</span>
+              <span class="detail-value status-active">Verified & Active</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Currency & Precision</span>
+              <span class="detail-value">INR (₹) • Integer Paise Storage (Zero Rounding Errors)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Summary Cards for Active Users (Dynamic) -->
+      <div class="accounts-overview" id="accountsOverviewContainer">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+
+    <!-- SECTION B: TRANSFER MONEY -->
+    <section class="section card transfer-section">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Section B</span>
+          <h2 class="section-title">Transfer Money</h2>
+        </div>
+        <p class="section-description">Secure peer-to-peer wallet transfer with real-time balance validation & ACID transaction guarantees</p>
+      </div>
+
+      <form id="transferForm" class="transfer-form">
+        <div class="form-row two-cols">
+          <!-- Sender Selection -->
+          <div class="form-group">
+            <label for="senderSelect" class="form-label">Sender Account</label>
+            <select id="senderSelect" class="form-input" required>
+              <option value="U001" selected>Alice (U001)</option>
+              <option value="U002">Bob (U002)</option>
+            </select>
+          </div>
+
+          <!-- Receiver Selection -->
+          <div class="form-group">
+            <label for="receiverSelect" class="form-label">Receiver Account</label>
+            <select id="receiverSelect" class="form-input" required>
+              <option value="U002" selected>Bob (U002)</option>
+              <option value="U001">Alice (U001)</option>
+              <option value="U999_NON_EXISTENT">Invalid Receiver (U999 - Negative Test)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row two-cols">
+          <!-- Amount Input -->
+          <div class="form-group">
+            <label for="transferAmount" class="form-label">Amount (₹)</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">₹</span>
+              <input type="number" id="transferAmount" class="form-input" placeholder="e.g. 500" min="1" step="any" required>
+            </div>
+            <div class="quick-amounts">
+              <button type="button" class="btn-chip" onclick="setTransferAmount(100)">₹100</button>
+              <button type="button" class="btn-chip" onclick="setTransferAmount(500)">₹500</button>
+              <button type="button" class="btn-chip" onclick="setTransferAmount(1000)">₹1,000</button>
+              <button type="button" class="btn-chip btn-chip-danger" onclick="setTransferAmount(10000)">₹10,000 (Test Insufficient)</button>
+            </div>
+          </div>
+
+          <!-- Transaction ID (Auto-Generated) -->
+          <div class="form-group">
+            <label for="transactionIdInput" class="form-label">
+              Transaction ID 
+              <span class="label-hint">(Auto-generated unique ID)</span>
+            </label>
+            <div class="input-with-button">
+              <input type="text" id="transactionIdInput" class="form-input" required>
+              <button type="button" id="regenerateTxnBtn" class="btn-secondary btn-compact" title="Generate New Transaction ID">New ID</button>
+            </div>
+            <span class="field-help">Can be reused to demonstrate duplicate transaction rejection (HTTP 409 Conflict).</span>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="submitTransferBtn" class="btn-primary btn-large">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Transfer Money
+          </button>
+          <button type="button" id="resetDemoBtn" class="btn-outline btn-large" title="Restore sample balances">
+            Reset Sample Balances
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- SECTION C: TRANSACTION HISTORY -->
+    <section class="section card history-section">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Section C</span>
+          <h2 class="section-title">Transaction History Ledger</h2>
+        </div>
+        <div class="table-legend">
+          <span class="legend-dot dot-debit"></span> Debit (Sent)
+          <span class="legend-dot dot-credit"></span> Credit (Received)
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Transaction ID</th>
+              <th>Sender</th>
+              <th>Receiver</th>
+              <th>Amount</th>
+              <th>Date & Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="transactionTableBody">
+            <tr>
+              <td colspan="6" class="empty-state">No transactions recorded yet. Complete a transfer to view history.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- SECTION D: AUTOMATED API QUALITY ASSURANCE & TESTING ENGINE -->
+    <section class="section card testing-section" id="testingSection">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Section D</span>
+          <h2 class="section-title">Automated API Quality Assurance & Test Engine</h2>
+        </div>
+        <div class="qa-badge-group">
+          <span class="testing-badge">Live API Execution</span>
+          <span class="testing-badge badge-qa">39 Assertions</span>
+        </div>
+      </div>
+
+      <div class="testing-explanation">
+        <p>
+          This dashboard executes live API requests against the Python Flask backend with SQLite invariant checking.
+          Test cases are categorized according to software testing methodologies: <strong>Functional Testing</strong>, <strong>Boundary Value Analysis (BVA)</strong>, <strong>Input Validation</strong>, <strong>Integration Testing</strong>, <strong>Database Consistency</strong>, <strong>Performance Latency Benchmarks</strong>, and <strong>Basic Security Validations</strong>.
+          Results are computed from real HTTP responses and assertion logic.
+        </p>
+      </div>
+
+      <!-- Test Metrics Cards -->
+      <div class="test-stats-grid">
+        <div class="stat-card total-card">
+          <div class="stat-number" id="testTotalCount">39</div>
+          <div class="stat-label">Total Test Cases</div>
+        </div>
+        <div class="stat-card passed-card">
+          <div class="stat-number" id="testPassedCount">--</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat-card failed-card">
+          <div class="stat-number" id="testFailedCount">--</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-card rate-card">
+          <div class="stat-number" id="testPassRate">--%</div>
+          <div class="stat-label">Pass Percentage</div>
+        </div>
+        <div class="stat-card duration-card">
+          <div class="stat-number" id="testDurationDisplay">-- ms</div>
+          <div class="stat-label">Total Duration</div>
+        </div>
+        <div class="stat-card latency-card">
+          <div class="stat-number" id="testAvgLatencyDisplay">-- ms</div>
+          <div class="stat-label">Avg API Latency</div>
+        </div>
+      </div>
+
+      <!-- Action & Configuration Bar -->
+      <div class="testing-toolbar">
+        <div class="primary-test-actions">
+          <button id="runTestsBtn" class="btn-primary btn-large">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Run All 39 Tests
+          </button>
+          <button id="resetDbBeforeTestBtn" class="btn-secondary btn-compact" title="Reset accounts to clean state">
+            Reset DB State
+          </button>
+          <span id="lastRunTime" class="last-run-timestamp">No test run yet</span>
+        </div>
+
+        <div class="testing-options">
+          <div class="threshold-input-wrapper">
+            <label for="perfThresholdInput" title="Maximum acceptable response time threshold">Latency Threshold:</label>
+            <input type="number" id="perfThresholdInput" value="250" min="50" max="2000" step="50" class="form-input threshold-input">
+            <span class="unit-label">ms</span>
+          </div>
+
+          <!-- Fault Simulation Control (Viva Defect Demonstration) -->
+          <div class="fault-simulation-wrapper">
+            <label for="faultSimSelect" title="Simulate a backend bug to demonstrate live defect detection and reporting">Fault Injection Demo:</label>
+            <select id="faultSimSelect" class="form-select fault-select">
+              <option value="none" selected>Production Mode (No Bugs)</option>
+              <option value="bypass_self_transfer">Inject Defect: Allow Self-Transfer</option>
+              <option value="bypass_duplicate_check">Inject Defect: Allow Duplicate Txn ID</option>
+              <option value="bypass_negative_check">Inject Defect: Allow Negative / Zero Amount</option>
+              <option value="bypass_decimal_check">Inject Defect: Bypass Decimal Precision</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-tabs-bar">
+        <button class="cat-tab active" data-category="ALL">All Categories (39)</button>
+        <button class="cat-tab" data-category="FT">A. Functional (7)</button>
+        <button class="cat-tab" data-category="BVA">B. Boundary Value (7)</button>
+        <button class="cat-tab" data-category="IVT">C. Input Validation (7)</button>
+        <button class="cat-tab" data-category="INT">D. Integration (5)</button>
+        <button class="cat-tab" data-category="DB">E. Database Consistency (5)</button>
+        <button class="cat-tab" data-category="PERF">F. Performance (3)</button>
+        <button class="cat-tab" data-category="SEC">G. Basic Security (5)</button>
+      </div>
+
+      <!-- Performance Latency Visualization Card -->
+      <div class="performance-benchmark-card" id="perfBenchmarkCard" style="display:none;">
+        <div class="perf-card-header">
+          <div class="perf-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <strong>Performance Latency Benchmark</strong>
+          </div>
+          <span class="perf-threshold-badge" id="perfThresholdBadge">Threshold: 250ms</span>
+        </div>
+        <div class="perf-metrics-row">
+          <div class="perf-metric-box">
+            <span class="perf-metric-label">Min Latency</span>
+            <span class="perf-metric-val" id="perfMinVal">-- ms</span>
+          </div>
+          <div class="perf-metric-box">
+            <span class="perf-metric-label">Avg Latency</span>
+            <span class="perf-metric-val" id="perfAvgVal">-- ms</span>
+          </div>
+          <div class="perf-metric-box">
+            <span class="perf-metric-label">Max Latency</span>
+            <span class="perf-metric-val" id="perfMaxVal">-- ms</span>
+          </div>
+          <div class="perf-metric-box">
+            <span class="perf-metric-label">Threshold Status</span>
+            <span class="perf-metric-val" id="perfStatusVal">--</span>
+          </div>
+        </div>
+        <div class="latency-meter-bar">
+          <div class="latency-fill" id="latencyMeterFill" style="width: 0%;"></div>
+        </div>
+        <p class="perf-disclaimer">
+          <strong>Note:</strong> Measures sequential client-server round-trip latency on Flask REST endpoints. Demonstrates responsiveness benchmarking; not a substitute for distributed concurrent load/stress testing.
+        </p>
+      </div>
+
+      <!-- Test Cases Grid / List -->
+      <div class="test-results-container">
+        <div class="results-header">
+          <h3 class="results-title">Test Cases & Live Execution Results</h3>
+          <span class="results-counter" id="visibleTestCounter">Showing 39 test cases</span>
+        </div>
+        <div class="test-cards-list" id="testCardsContainer">
+          <!-- Populated dynamically via script.js -->
+        </div>
+      </div>
+
+      <!-- SECTION 5: DEFECT DETECTION & REPORTING -->
+      <div class="defect-reporting-section" id="defectReportingSection">
+        <div class="defect-header">
+          <div class="defect-title-group">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <h3 class="defect-title">Defect Detection & Quality Engineering Log</h3>
+          </div>
+          <div class="defect-counts" id="defectCountsBadge">
+            <span class="defect-pill zero-defects" id="defectStatusPill">Zero Active Defects</span>
+          </div>
+        </div>
+
+        <p class="defect-description">
+          When an automated assertion fails or an unexpected HTTP status is returned, the testing engine automatically isolates the defect, assigns a severity rating (High, Medium, Low), records expected vs actual behavior, identifies the root cause, and provides a one-click verification action.
+        </p>
+
+        <div class="defect-table-wrapper" id="defectTableWrapper">
+          <table class="defect-table">
+            <thead>
+              <tr>
+                <th>Defect ID</th>
+                <th>Test Case ID & Name</th>
+                <th>Affected Endpoint</th>
+                <th>Severity</th>
+                <th>Expected vs Actual</th>
+                <th>Likely Root Cause</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="defectTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">No defects detected. All assertions passed successfully.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Test Execution History -->
+      <div class="execution-history-section">
+        <div class="history-section-header">
+          <h4 class="history-title">Test Execution History</h4>
+          <button id="clearHistoryBtn" class="btn-text">Clear History</button>
+        </div>
+        <div class="history-table-wrapper">
+          <table class="history-log-table">
+            <thead>
+              <tr>
+                <th>Run #</th>
+                <th>Timestamp</th>
+                <th>Scope</th>
+                <th>Passed / Total</th>
+                <th>Pass Rate</th>
+                <th>Duration</th>
+                <th>Avg Latency</th>
+                <th>Defects</th>
+              </tr>
+            </thead>
+            <tbody id="executionHistoryBody">
+              <tr>
+                <td colspan="8" class="empty-state">No historical test runs recorded in this session.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Postman Integration & Runner Reference -->
+      <div class="postman-reference-card">
+        <div class="postman-ref-header">
+          <div class="postman-icon-wrapper">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <div>
+            <h4 class="postman-ref-title">Postman API Testing Integration</h4>
+            <p class="postman-ref-subtitle">Standard Postman v2.1.0 Collection & Environment for Postman Collection Runner</p>
+          </div>
+        </div>
+        <p class="postman-ref-text">
+          In addition to this interactive browser runner, the project includes an organized Postman collection matching all 7 testing categories with pre-request scripts and <code>pm.test()</code> assertions.
+        </p>
+        <div class="postman-files-grid">
+          <div class="postman-file-box">
+            <span class="file-badge">Collection</span>
+            <code>postman/Digital_Wallet_API_Tests.postman_collection.json</code>
+            <span class="file-desc">39 requests organized into Groups A through G with JavaScript assertions</span>
+          </div>
+          <div class="postman-file-box">
+            <span class="file-badge badge-env">Environment</span>
+            <code>postman/Digital_Wallet_Environment.postman_environment.json</code>
+            <span class="file-desc">Configurable variables (<code>baseUrl</code>, <code>sender_id</code>, <code>receiver_id</code>)</span>
+          </div>
+        </div>
+        <div class="postman-instructions">
+          <strong>How to run in Postman:</strong>
+          <ol>
+            <li>Open Postman Desktop and click <strong>Import</strong>.</li>
+            <li>Select both JSON files from the <code>postman/</code> folder.</li>
+            <li>Select <strong>Digital Wallet Environment</strong> in the top-right environment selector.</li>
+            <li>Right-click the collection &rarr; Click <strong>Run collection</strong> &rarr; Click <strong>Run WalletPay Suite</strong>.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Add New Wallet User -->
+  <div id="addUserModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Wallet User</h3>
+        <button id="closeAddUserModal" class="modal-close">&times;</button>
+      </div>
+      <form id="addUserForm" class="modal-form">
+        <div class="form-group">
+          <label for="newUserName" class="form-label">Account Holder Name</label>
+          <input type="text" id="newUserName" class="form-input" placeholder="e.g. Charlie" required>
+        </div>
+        <div class="form-group">
+          <label for="newUserBalance" class="form-label">Initial Balance (₹)</label>
+          <div class="input-with-prefix">
+            <span class="input-prefix">₹</span>
+            <input type="number" id="newUserBalance" class="form-input" placeholder="e.g. 3000" min="0" step="any" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="newUserId" class="form-label">User Identifier <span class="label-hint">(Optional, e.g. U003)</span></label>
+          <input type="text" id="newUserId" class="form-input" placeholder="Leave blank to auto-generate (e.g. U003)">
+        </div>
+        <div class="modal-actions">
+          <button type="submit" id="submitAddUserBtn" class="btn-primary btn-large">Create Wallet</button>
+          <button type="button" id="cancelAddUserBtn" class="btn-secondary btn-large">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>WalletPay • Automated API Quality Assurance, Transaction Validation & Defect Reporting Engine</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

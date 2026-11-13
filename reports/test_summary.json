@@ -1,0 +1,1227 @@
+{
+  "executed": true,
+  "execution_time": "Nov 13, 2026, 02:32:05 PM",
+  "total": 39,
+  "passed": 39,
+  "failed": 0,
+  "pass_rate_percent": 100.0,
+  "duration_ms": 81.44,
+  "avg_latency_ms": 1.57,
+  "max_latency_ms": 9.96,
+  "categories": {
+    "Functional Testing": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-FT-01",
+          "name": "Successful Peer-to-Peer Transfer",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U001",
+            "receiver": "U002",
+            "amount": 500
+          },
+          "expected": "HTTP 200 OK, status SUCCESS, Alice debited \u20b9500, Bob credited \u20b9500",
+          "actual": "HTTP 200, message: 'Transfer completed successfully.'",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 9.96,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-02",
+          "name": "Insufficient Balance Rejection",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U001",
+            "amount": 99999
+          },
+          "expected": "HTTP 400 Bad Request with 'Insufficient wallet balance'",
+          "actual": "HTTP 400, error: 'Insufficient wallet balance.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.86,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-03",
+          "name": "Invalid Sender Account Rejection",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U999_NON_EXISTENT"
+          },
+          "expected": "HTTP 404 Not Found with 'Sender not found'",
+          "actual": "HTTP 404, error: 'Sender not found.'",
+          "status": "PASSED",
+          "status_code": 404,
+          "duration_ms": 1.09,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-04",
+          "name": "Invalid Receiver Account Rejection",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "receiver": "U999_NON_EXISTENT"
+          },
+          "expected": "HTTP 404 Not Found with 'Receiver not found'",
+          "actual": "HTTP 404, error: 'Receiver not found.'",
+          "status": "PASSED",
+          "status_code": 404,
+          "duration_ms": 2.14,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-05",
+          "name": "Duplicate Transaction ID (Idempotency Guard)",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "replayed_txn_id": "TXN_FT_1794560525795"
+          },
+          "expected": "HTTP 409 Conflict with 'Duplicate transaction'",
+          "actual": "HTTP 409, error: 'Duplicate transaction: A transaction with this transaction_id already exists.'",
+          "status": "PASSED",
+          "status_code": 409,
+          "duration_ms": 0.72,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-06",
+          "name": "Self-Transfer Rejection",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U001",
+            "receiver": "U001"
+          },
+          "expected": "HTTP 400 Bad Request with 'Sender and receiver cannot be the same account'",
+          "actual": "HTTP 400, error: 'Sender and receiver cannot be the same account.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.26,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-FT-07",
+          "name": "Transaction History Ledger Verification",
+          "category": "Functional Testing",
+          "scenario": {
+            "endpoint": "GET /api/transactions/U001"
+          },
+          "expected": "HTTP 200 OK, list containing recorded debit transactions with audit metadata",
+          "actual": "HTTP 200, count: 1",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.61,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Boundary Value Analysis": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-BVA-01",
+          "name": "Minimum Valid Amount Boundary (\u20b91.00)",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": 1.0
+          },
+          "expected": "HTTP 200 OK, successful transfer of exact minimum allowed amount \u20b91.00",
+          "actual": "HTTP 200, amount: 1.0",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 6.72,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-02",
+          "name": "Sub-Minimum Amount Boundary (\u20b90.50)",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": 0.5
+          },
+          "expected": "HTTP 400 Bad Request with 'Minimum transfer amount is \u20b91.00'",
+          "actual": "HTTP 400, error: 'Minimum transfer amount is \u20b91.00 (100 paise).'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.36,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-03",
+          "name": "Zero Amount Boundary (\u20b90.00)",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": 0
+          },
+          "expected": "HTTP 400 Bad Request with 'Transfer amount must be greater than zero'",
+          "actual": "HTTP 400, error: 'Transfer amount must be greater than zero.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.21,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-04",
+          "name": "Negative Amount Boundary (-\u20b950.00)",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": -50.0
+          },
+          "expected": "HTTP 400 Bad Request, rejecting negative currency transfer",
+          "actual": "HTTP 400, error: 'Transfer amount must be greater than zero.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.2,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-05",
+          "name": "Exact Available Balance Boundary",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U002",
+            "amount": 2501.0
+          },
+          "expected": "HTTP 200 OK, full wallet balance transferred leaving exactly \u20b90.00",
+          "actual": "HTTP 200, new sender balance: \u20b90.0",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 7.86,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-06",
+          "name": "Amount Exceeding Available Balance (+\u20b91.00 Boundary)",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "sender": "U002 (Balance \u20b90)",
+            "amount": 1.0
+          },
+          "expected": "HTTP 400 Bad Request with 'Insufficient wallet balance'",
+          "actual": "HTTP 400, error: 'Insufficient wallet balance.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.79,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-BVA-07",
+          "name": "Extremely Large Transaction Amount Boundary",
+          "category": "Boundary Value Analysis",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": 10000000
+          },
+          "expected": "HTTP 400 Bad Request, rejected due to upper limit cap or insufficient funds",
+          "actual": "HTTP 400, error: 'Transfer amount exceeds maximum single transaction limit of \u20b95,00,000.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.29,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Input Validation Testing": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-IVT-01",
+          "name": "Missing Required Field (Amount Omitted)",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "payload": "Missing 'amount'"
+          },
+          "expected": "HTTP 400 Bad Request with 'Missing required fields'",
+          "actual": "HTTP 400, error: 'Missing required fields: amount'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.21,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-02",
+          "name": "Empty/Whitespace Transaction ID Rejection",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "transaction_id": "   "
+          },
+          "expected": "HTTP 400 Bad Request, rejecting whitespace-only transaction ID",
+          "actual": "HTTP 400, error: 'transaction_id must be a non-empty string.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.2,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-03",
+          "name": "Invalid Data Type (Boolean Amount)",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": true
+          },
+          "expected": "HTTP 400 Bad Request, rejecting boolean for currency amount",
+          "actual": "HTTP 400, error: 'Invalid amount format. Must be a numeric value, not a boolean.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.2,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-04",
+          "name": "Non-Numeric String Amount Rejection",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": "five_hundred"
+          },
+          "expected": "HTTP 400 Bad Request with 'Must be a valid numeric value'",
+          "actual": "HTTP 400, error: 'Invalid amount format. Must be a valid numeric value.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.2,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-05",
+          "name": "Malformed JSON Payload Rejection",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "body": "Invalid JSON syntax"
+          },
+          "expected": "HTTP 400 Bad Request, rejecting malformed JSON body",
+          "actual": "HTTP 400, error: 'Malformed JSON payload. Please provide valid JSON.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.2,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-06",
+          "name": "Decimal Precision Boundary (Max 2 Decimal Places / Paise)",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": 25.125
+          },
+          "expected": "HTTP 400 Bad Request, rejecting fractional paise with >2 decimal places",
+          "actual": "HTTP 400, error: 'Invalid decimal precision. Transfer amount cannot have more than 2 decimal places (paise).'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.19,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-IVT-07",
+          "name": "Special Characters / Symbols in Amount Rejection",
+          "category": "Input Validation Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "amount": "\u20b9100#"
+          },
+          "expected": "HTTP 400 Bad Request, rejecting non-numeric symbols in amount",
+          "actual": "HTTP 400, error: 'Invalid amount format. Must be a valid numeric value.'",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.19,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Integration Testing": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-INT-01",
+          "name": "Flask API & SQLite Database Handshake",
+          "category": "Integration Testing",
+          "scenario": {
+            "endpoint": "GET /api/health"
+          },
+          "expected": "HTTP 200 OK, database status 'connected'",
+          "actual": "HTTP 200, database: connected",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.54,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-INT-02",
+          "name": "User Accounts Directory & Schema Mapping",
+          "category": "Integration Testing",
+          "scenario": {
+            "endpoint": "GET /api/users"
+          },
+          "expected": "HTTP 200 OK, returns user records with user_id, name, balance_paise, balance_rupees",
+          "actual": "HTTP 200, total accounts loaded: 2",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.51,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-INT-03",
+          "name": "End-to-End Balance Synchronization Cycle",
+          "category": "Integration Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer + GET /api/balance/*",
+            "amount": 300.0
+          },
+          "expected": "Sender decremented by exact \u20b9300, Receiver incremented by exact \u20b9300 in SQLite",
+          "actual": "Delta Sender: -\u20b9300.00, Delta Receiver: +\u20b9300.00",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 6.14,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-INT-04",
+          "name": "Transaction Ledger Persistence Verification",
+          "category": "Integration Testing",
+          "scenario": {
+            "endpoint": "GET /api/transactions/U001",
+            "expected_txn": "TXN_SYNC_1794560525824"
+          },
+          "expected": "Transaction record persisted to SQLite ledger and retrievable via history API",
+          "actual": "Record found in ledger: True",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.6,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-INT-05",
+          "name": "Failed Transfer State Non-Pollution",
+          "category": "Integration Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer -> GET /api/balance/U001",
+            "target": "U999_NON_EXISTENT"
+          },
+          "expected": "Sender balance remains strictly unchanged after rejected transaction",
+          "actual": "Pre: \u20b96700.0, Post: \u20b96700.0",
+          "status": "PASSED",
+          "status_code": 404,
+          "duration_ms": 1.17,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Database Consistency": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-DB-01",
+          "name": "Conservation of Total Money (Invariant Sum)",
+          "category": "Database Consistency",
+          "scenario": {
+            "rule": "Sum of all account balances before transfer == Sum after transfer"
+          },
+          "expected": "System balance conserved: \u20b97000.00 == \u20b97000.00",
+          "actual": "Sum before: \u20b97000.00, Sum after: \u20b97000.00 (Delta: 0)",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 5.0,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-DB-02",
+          "name": "Non-Negative Balance Constraint Verification",
+          "category": "Database Consistency",
+          "scenario": {
+            "rule": "balance_paise >= 0 constraint enforced for every user account"
+          },
+          "expected": "Zero accounts with negative balances across the entire database",
+          "actual": "Negative balance accounts found: 0",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 3.0,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-DB-03",
+          "name": "Transaction History Isolation for Failed Requests",
+          "category": "Database Consistency",
+          "scenario": {
+            "scenario": "Rejected transfer with insufficient funds"
+          },
+          "expected": "No SUCCESS transaction row created in database for rejected request",
+          "actual": "Zero database rows found for failed transaction ID (isolated)",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 4.0,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-DB-04",
+          "name": "Ledger Debit-Credit Conservation & Foreign Keys",
+          "category": "Database Consistency",
+          "scenario": {
+            "endpoint": "GET /api/system/consistency"
+          },
+          "expected": "HTTP 200 OK, is_consistent: true, orphan_transactions: 0",
+          "actual": "Consistency: CONSISTENT, Total Txns: 5",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.53,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-DB-05",
+          "name": "Atomic Rollback on Transaction Interruption",
+          "category": "Database Consistency",
+          "scenario": {
+            "scenario": "Simulated mid-flight failure during fund debit"
+          },
+          "expected": "conn.rollback() executed successfully; balance restored to pre-transaction value",
+          "actual": "Rollback triggered and verified cleanly",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 3.0,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Performance Testing": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-PERF-01",
+          "name": "Single Read API Response-Time Benchmark (< 200ms)",
+          "category": "Performance Testing",
+          "scenario": {
+            "endpoint": "GET /api/balance/U001",
+            "threshold_ms": 200.0
+          },
+          "expected": "Response time <= 200ms (Observed: 0.48 ms)",
+          "actual": "HTTP 200 in 0.48 ms",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.48,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-PERF-02",
+          "name": "Sequential Latency Stability (Burst 5 requests, Avg < 250ms)",
+          "category": "Performance Testing",
+          "scenario": {
+            "endpoint": "GET /api/users",
+            "iterations": 5,
+            "threshold_ms": 250.0
+          },
+          "expected": "Average latency <= 250ms across sequential requests",
+          "actual": "Observed Avg: 0.4 ms (Range: 0.37-0.41 ms)",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.4,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-PERF-03",
+          "name": "Atomic Transfer API Write Latency (< 300ms)",
+          "category": "Performance Testing",
+          "scenario": {
+            "endpoint": "POST /api/transfer",
+            "threshold_ms": 300.0
+          },
+          "expected": "Atomic SQLite transaction write completes under 300ms",
+          "actual": "HTTP 200 in 6.87 ms",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 6.87,
+          "failure_reason": null
+        }
+      ]
+    },
+    "Basic Security Testing": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "test_id": "TC-SEC-01",
+          "name": "SQL Injection Protection in User Identifier",
+          "category": "Basic Security Testing",
+          "scenario": {
+            "input": "' OR '1'='1",
+            "endpoint": "GET /api/balance/<id>"
+          },
+          "expected": "HTTP 404 Not Found via parameterized query without leaking database records",
+          "actual": "HTTP 404, error: 'User not found'",
+          "status": "PASSED",
+          "status_code": 404,
+          "duration_ms": 0.85,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-SEC-02",
+          "name": "SQL Injection Neutralization in Transaction ID",
+          "category": "Basic Security Testing",
+          "scenario": {
+            "payload": "TXN_SQLI'; DROP TABLE users; --"
+          },
+          "expected": "Parameterized query handles SQL syntax literally; users table intact and unaffected",
+          "actual": "HTTP 200, users table verified intact",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 5.55,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-SEC-03",
+          "name": "Error Response Sanitization (No Internal Traceback Leakage)",
+          "category": "Basic Security Testing",
+          "scenario": {
+            "scenario": "Malformed input triggering validation error"
+          },
+          "expected": "Clean JSON error response without exposing Python stack traces or SQLite schemas",
+          "actual": "HTTP 400, clean sanitized response verified",
+          "status": "PASSED",
+          "status_code": 400,
+          "duration_ms": 0.37,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-SEC-04",
+          "name": "CORS Preflight & Security Response Headers",
+          "category": "Basic Security Testing",
+          "scenario": {
+            "endpoint": "OPTIONS /api/transfer"
+          },
+          "expected": "HTTP 200 OK, Access-Control-Allow-Origin: *, X-Content-Type-Options: nosniff",
+          "actual": "HTTP 200, CORS: True, nosniff: True",
+          "status": "PASSED",
+          "status_code": 200,
+          "duration_ms": 0.17,
+          "failure_reason": null
+        },
+        {
+          "test_id": "TC-SEC-05",
+          "name": "XSS Script Tag Neutralization in User Creation",
+          "category": "Basic Security Testing",
+          "scenario": {
+            "endpoint": "POST /api/users",
+            "name": "<script>alert('xss')</script>"
+          },
+          "expected": "HTTP 201 Created, script tags properly sanitized/HTML-escaped in storage",
+          "actual": "Stored name: &lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;",
+          "status": "PASSED",
+          "status_code": 201,
+          "duration_ms": 6.07,
+          "failure_reason": null
+        }
+      ]
+    }
+  },
+  "defects": [],
+  "all_results": [
+    {
+      "test_id": "TC-FT-01",
+      "name": "Successful Peer-to-Peer Transfer",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U001",
+        "receiver": "U002",
+        "amount": 500
+      },
+      "expected": "HTTP 200 OK, status SUCCESS, Alice debited \u20b9500, Bob credited \u20b9500",
+      "actual": "HTTP 200, message: 'Transfer completed successfully.'",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 9.96,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-02",
+      "name": "Insufficient Balance Rejection",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U001",
+        "amount": 99999
+      },
+      "expected": "HTTP 400 Bad Request with 'Insufficient wallet balance'",
+      "actual": "HTTP 400, error: 'Insufficient wallet balance.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.86,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-03",
+      "name": "Invalid Sender Account Rejection",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U999_NON_EXISTENT"
+      },
+      "expected": "HTTP 404 Not Found with 'Sender not found'",
+      "actual": "HTTP 404, error: 'Sender not found.'",
+      "status": "PASSED",
+      "status_code": 404,
+      "duration_ms": 1.09,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-04",
+      "name": "Invalid Receiver Account Rejection",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "receiver": "U999_NON_EXISTENT"
+      },
+      "expected": "HTTP 404 Not Found with 'Receiver not found'",
+      "actual": "HTTP 404, error: 'Receiver not found.'",
+      "status": "PASSED",
+      "status_code": 404,
+      "duration_ms": 2.14,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-05",
+      "name": "Duplicate Transaction ID (Idempotency Guard)",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "replayed_txn_id": "TXN_FT_1794560525795"
+      },
+      "expected": "HTTP 409 Conflict with 'Duplicate transaction'",
+      "actual": "HTTP 409, error: 'Duplicate transaction: A transaction with this transaction_id already exists.'",
+      "status": "PASSED",
+      "status_code": 409,
+      "duration_ms": 0.72,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-06",
+      "name": "Self-Transfer Rejection",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U001",
+        "receiver": "U001"
+      },
+      "expected": "HTTP 400 Bad Request with 'Sender and receiver cannot be the same account'",
+      "actual": "HTTP 400, error: 'Sender and receiver cannot be the same account.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.26,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-FT-07",
+      "name": "Transaction History Ledger Verification",
+      "category": "Functional Testing",
+      "scenario": {
+        "endpoint": "GET /api/transactions/U001"
+      },
+      "expected": "HTTP 200 OK, list containing recorded debit transactions with audit metadata",
+      "actual": "HTTP 200, count: 1",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.61,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-01",
+      "name": "Minimum Valid Amount Boundary (\u20b91.00)",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": 1.0
+      },
+      "expected": "HTTP 200 OK, successful transfer of exact minimum allowed amount \u20b91.00",
+      "actual": "HTTP 200, amount: 1.0",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 6.72,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-02",
+      "name": "Sub-Minimum Amount Boundary (\u20b90.50)",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": 0.5
+      },
+      "expected": "HTTP 400 Bad Request with 'Minimum transfer amount is \u20b91.00'",
+      "actual": "HTTP 400, error: 'Minimum transfer amount is \u20b91.00 (100 paise).'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.36,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-03",
+      "name": "Zero Amount Boundary (\u20b90.00)",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": 0
+      },
+      "expected": "HTTP 400 Bad Request with 'Transfer amount must be greater than zero'",
+      "actual": "HTTP 400, error: 'Transfer amount must be greater than zero.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.21,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-04",
+      "name": "Negative Amount Boundary (-\u20b950.00)",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": -50.0
+      },
+      "expected": "HTTP 400 Bad Request, rejecting negative currency transfer",
+      "actual": "HTTP 400, error: 'Transfer amount must be greater than zero.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.2,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-05",
+      "name": "Exact Available Balance Boundary",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U002",
+        "amount": 2501.0
+      },
+      "expected": "HTTP 200 OK, full wallet balance transferred leaving exactly \u20b90.00",
+      "actual": "HTTP 200, new sender balance: \u20b90.0",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 7.86,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-06",
+      "name": "Amount Exceeding Available Balance (+\u20b91.00 Boundary)",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "sender": "U002 (Balance \u20b90)",
+        "amount": 1.0
+      },
+      "expected": "HTTP 400 Bad Request with 'Insufficient wallet balance'",
+      "actual": "HTTP 400, error: 'Insufficient wallet balance.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.79,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-BVA-07",
+      "name": "Extremely Large Transaction Amount Boundary",
+      "category": "Boundary Value Analysis",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": 10000000
+      },
+      "expected": "HTTP 400 Bad Request, rejected due to upper limit cap or insufficient funds",
+      "actual": "HTTP 400, error: 'Transfer amount exceeds maximum single transaction limit of \u20b95,00,000.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.29,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-01",
+      "name": "Missing Required Field (Amount Omitted)",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "payload": "Missing 'amount'"
+      },
+      "expected": "HTTP 400 Bad Request with 'Missing required fields'",
+      "actual": "HTTP 400, error: 'Missing required fields: amount'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.21,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-02",
+      "name": "Empty/Whitespace Transaction ID Rejection",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "transaction_id": "   "
+      },
+      "expected": "HTTP 400 Bad Request, rejecting whitespace-only transaction ID",
+      "actual": "HTTP 400, error: 'transaction_id must be a non-empty string.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.2,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-03",
+      "name": "Invalid Data Type (Boolean Amount)",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": true
+      },
+      "expected": "HTTP 400 Bad Request, rejecting boolean for currency amount",
+      "actual": "HTTP 400, error: 'Invalid amount format. Must be a numeric value, not a boolean.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.2,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-04",
+      "name": "Non-Numeric String Amount Rejection",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": "five_hundred"
+      },
+      "expected": "HTTP 400 Bad Request with 'Must be a valid numeric value'",
+      "actual": "HTTP 400, error: 'Invalid amount format. Must be a valid numeric value.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.2,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-05",
+      "name": "Malformed JSON Payload Rejection",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "body": "Invalid JSON syntax"
+      },
+      "expected": "HTTP 400 Bad Request, rejecting malformed JSON body",
+      "actual": "HTTP 400, error: 'Malformed JSON payload. Please provide valid JSON.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.2,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-06",
+      "name": "Decimal Precision Boundary (Max 2 Decimal Places / Paise)",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": 25.125
+      },
+      "expected": "HTTP 400 Bad Request, rejecting fractional paise with >2 decimal places",
+      "actual": "HTTP 400, error: 'Invalid decimal precision. Transfer amount cannot have more than 2 decimal places (paise).'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.19,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-IVT-07",
+      "name": "Special Characters / Symbols in Amount Rejection",
+      "category": "Input Validation Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "amount": "\u20b9100#"
+      },
+      "expected": "HTTP 400 Bad Request, rejecting non-numeric symbols in amount",
+      "actual": "HTTP 400, error: 'Invalid amount format. Must be a valid numeric value.'",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.19,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-INT-01",
+      "name": "Flask API & SQLite Database Handshake",
+      "category": "Integration Testing",
+      "scenario": {
+        "endpoint": "GET /api/health"
+      },
+      "expected": "HTTP 200 OK, database status 'connected'",
+      "actual": "HTTP 200, database: connected",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.54,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-INT-02",
+      "name": "User Accounts Directory & Schema Mapping",
+      "category": "Integration Testing",
+      "scenario": {
+        "endpoint": "GET /api/users"
+      },
+      "expected": "HTTP 200 OK, returns user records with user_id, name, balance_paise, balance_rupees",
+      "actual": "HTTP 200, total accounts loaded: 2",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.51,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-INT-03",
+      "name": "End-to-End Balance Synchronization Cycle",
+      "category": "Integration Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer + GET /api/balance/*",
+        "amount": 300.0
+      },
+      "expected": "Sender decremented by exact \u20b9300, Receiver incremented by exact \u20b9300 in SQLite",
+      "actual": "Delta Sender: -\u20b9300.00, Delta Receiver: +\u20b9300.00",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 6.14,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-INT-04",
+      "name": "Transaction Ledger Persistence Verification",
+      "category": "Integration Testing",
+      "scenario": {
+        "endpoint": "GET /api/transactions/U001",
+        "expected_txn": "TXN_SYNC_1794560525824"
+      },
+      "expected": "Transaction record persisted to SQLite ledger and retrievable via history API",
+      "actual": "Record found in ledger: True",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.6,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-INT-05",
+      "name": "Failed Transfer State Non-Pollution",
+      "category": "Integration Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer -> GET /api/balance/U001",
+        "target": "U999_NON_EXISTENT"
+      },
+      "expected": "Sender balance remains strictly unchanged after rejected transaction",
+      "actual": "Pre: \u20b96700.0, Post: \u20b96700.0",
+      "status": "PASSED",
+      "status_code": 404,
+      "duration_ms": 1.17,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-DB-01",
+      "name": "Conservation of Total Money (Invariant Sum)",
+      "category": "Database Consistency",
+      "scenario": {
+        "rule": "Sum of all account balances before transfer == Sum after transfer"
+      },
+      "expected": "System balance conserved: \u20b97000.00 == \u20b97000.00",
+      "actual": "Sum before: \u20b97000.00, Sum after: \u20b97000.00 (Delta: 0)",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 5.0,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-DB-02",
+      "name": "Non-Negative Balance Constraint Verification",
+      "category": "Database Consistency",
+      "scenario": {
+        "rule": "balance_paise >= 0 constraint enforced for every user account"
+      },
+      "expected": "Zero accounts with negative balances across the entire database",
+      "actual": "Negative balance accounts found: 0",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 3.0,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-DB-03",
+      "name": "Transaction History Isolation for Failed Requests",
+      "category": "Database Consistency",
+      "scenario": {
+        "scenario": "Rejected transfer with insufficient funds"
+      },
+      "expected": "No SUCCESS transaction row created in database for rejected request",
+      "actual": "Zero database rows found for failed transaction ID (isolated)",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 4.0,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-DB-04",
+      "name": "Ledger Debit-Credit Conservation & Foreign Keys",
+      "category": "Database Consistency",
+      "scenario": {
+        "endpoint": "GET /api/system/consistency"
+      },
+      "expected": "HTTP 200 OK, is_consistent: true, orphan_transactions: 0",
+      "actual": "Consistency: CONSISTENT, Total Txns: 5",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.53,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-DB-05",
+      "name": "Atomic Rollback on Transaction Interruption",
+      "category": "Database Consistency",
+      "scenario": {
+        "scenario": "Simulated mid-flight failure during fund debit"
+      },
+      "expected": "conn.rollback() executed successfully; balance restored to pre-transaction value",
+      "actual": "Rollback triggered and verified cleanly",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 3.0,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-PERF-01",
+      "name": "Single Read API Response-Time Benchmark (< 200ms)",
+      "category": "Performance Testing",
+      "scenario": {
+        "endpoint": "GET /api/balance/U001",
+        "threshold_ms": 200.0
+      },
+      "expected": "Response time <= 200ms (Observed: 0.48 ms)",
+      "actual": "HTTP 200 in 0.48 ms",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.48,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-PERF-02",
+      "name": "Sequential Latency Stability (Burst 5 requests, Avg < 250ms)",
+      "category": "Performance Testing",
+      "scenario": {
+        "endpoint": "GET /api/users",
+        "iterations": 5,
+        "threshold_ms": 250.0
+      },
+      "expected": "Average latency <= 250ms across sequential requests",
+      "actual": "Observed Avg: 0.4 ms (Range: 0.37-0.41 ms)",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.4,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-PERF-03",
+      "name": "Atomic Transfer API Write Latency (< 300ms)",
+      "category": "Performance Testing",
+      "scenario": {
+        "endpoint": "POST /api/transfer",
+        "threshold_ms": 300.0
+      },
+      "expected": "Atomic SQLite transaction write completes under 300ms",
+      "actual": "HTTP 200 in 6.87 ms",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 6.87,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-SEC-01",
+      "name": "SQL Injection Protection in User Identifier",
+      "category": "Basic Security Testing",
+      "scenario": {
+        "input": "' OR '1'='1",
+        "endpoint": "GET /api/balance/<id>"
+      },
+      "expected": "HTTP 404 Not Found via parameterized query without leaking database records",
+      "actual": "HTTP 404, error: 'User not found'",
+      "status": "PASSED",
+      "status_code": 404,
+      "duration_ms": 0.85,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-SEC-02",
+      "name": "SQL Injection Neutralization in Transaction ID",
+      "category": "Basic Security Testing",
+      "scenario": {
+        "payload": "TXN_SQLI'; DROP TABLE users; --"
+      },
+      "expected": "Parameterized query handles SQL syntax literally; users table intact and unaffected",
+      "actual": "HTTP 200, users table verified intact",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 5.55,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-SEC-03",
+      "name": "Error Response Sanitization (No Internal Traceback Leakage)",
+      "category": "Basic Security Testing",
+      "scenario": {
+        "scenario": "Malformed input triggering validation error"
+      },
+      "expected": "Clean JSON error response without exposing Python stack traces or SQLite schemas",
+      "actual": "HTTP 400, clean sanitized response verified",
+      "status": "PASSED",
+      "status_code": 400,
+      "duration_ms": 0.37,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-SEC-04",
+      "name": "CORS Preflight & Security Response Headers",
+      "category": "Basic Security Testing",
+      "scenario": {
+        "endpoint": "OPTIONS /api/transfer"
+      },
+      "expected": "HTTP 200 OK, Access-Control-Allow-Origin: *, X-Content-Type-Options: nosniff",
+      "actual": "HTTP 200, CORS: True, nosniff: True",
+      "status": "PASSED",
+      "status_code": 200,
+      "duration_ms": 0.17,
+      "failure_reason": null
+    },
+    {
+      "test_id": "TC-SEC-05",
+      "name": "XSS Script Tag Neutralization in User Creation",
+      "category": "Basic Security Testing",
+      "scenario": {
+        "endpoint": "POST /api/users",
+        "name": "<script>alert('xss')</script>"
+      },
+      "expected": "HTTP 201 Created, script tags properly sanitized/HTML-escaped in storage",
+      "actual": "Stored name: &lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;",
+      "status": "PASSED",
+      "status_code": 201,
+      "duration_ms": 6.07,
+      "failure_reason": null
+    }
+  ]
+}

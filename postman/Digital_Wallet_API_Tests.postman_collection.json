@@ -1,0 +1,1282 @@
+{
+  "info": {
+    "_postman_id": "a91b2c3d-4e5f-6789-0123-abcdef456789",
+    "name": "WalletPay - Automated API Quality Assurance & Validation Suite",
+    "description": "Comprehensive Software Testing & Quality Assurance Suite for WalletPay Digital Wallet System.\nOrganized into 7 testing categories covering 39 test assertions:\n- Group A: Functional Testing\n- Group B: Boundary Value Analysis\n- Group C: Input Validation Testing\n- Group D: Integration Testing\n- Group E: Database Consistency Testing\n- Group F: Performance & Latency Testing\n- Group G: Basic Security Testing\nCompatible with Postman Desktop and Postman Collection Runner.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:5001",
+      "type": "string"
+    },
+    {
+      "key": "shared_txn_id",
+      "value": "TXN_INIT_001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Group A - Functional Testing",
+      "description": "Core business logic validations: positive transfers, insufficient funds, user existence, idempotency, self-transfer, and history verification.",
+      "item": [
+        {
+          "name": "TC-FT-01: Successful Money Transfer (Alice -> Bob ₹500)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var txnId = 'TXN_FT_' + Date.now();",
+                  "pm.variables.set('dynamic_txn_id', txnId);",
+                  "pm.collectionVariables.set('shared_txn_id', txnId);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK (Expected Success)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response time is within threshold (< 400ms)', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});",
+                  "pm.test('Payload contains success message and transaction object', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.message).to.eql('Transfer completed successfully.');",
+                  "    pm.expect(data.transaction.status).to.eql('SUCCESS');",
+                  "    pm.expect(data.transaction.amount_rupees).to.eql(500);",
+                  "    pm.expect(data.sender_new_balance_rupees).to.be.a('number');",
+                  "    pm.expect(data.receiver_new_balance_rupees).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 500\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-02: Insufficient Balance Rejection (Attempt ₹99,999)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_INSUF_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Rejection error indicates insufficient balance', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Insufficient wallet balance');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 99999\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-03: Invalid Sender Account Rejection",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_INVS_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Error indicates sender was not found', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Sender not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"U999_NON_EXISTENT\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-04: Invalid Receiver Account Rejection",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_INVR_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Error indicates receiver was not found', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Receiver not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"U999_NON_EXISTENT\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-05: Duplicate Transaction ID Rejection (Idempotency)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "var dupId = pm.collectionVariables.get('shared_txn_id') || 'TXN_DUP_SEED';",
+                  "pm.variables.set('dup_target_id', dupId);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test('Error message identifies duplicate transaction ID', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Duplicate transaction');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dup_target_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 500\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-06: Self-Transfer Rejection (Sender == Receiver)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_SELF_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error message indicates sender and receiver cannot be the same', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('cannot be the same');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{sender_id}}\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-FT-07: Transaction History Ledger Retrieval",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Transactions array returned with count', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.transactions).to.be.an('array');",
+                  "    pm.expect(data.count).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/transactions/{{sender_id}}", "host": ["{{baseUrl}}"], "path": ["api", "transactions", "{{sender_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group B - Boundary Value Analysis",
+      "description": "Boundary testing: minimum valid transfer (₹1), sub-rupee boundary, zero amount, negative values, exact balance, exceeding balance, and maximum limits.",
+      "item": [
+        {
+          "name": "TC-BVA-01: Minimum Valid Amount Boundary (₹1.00)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA1_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK (₹1.00 is allowed)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Transfer amount confirmed as exactly ₹1.00', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.transaction.amount_rupees).to.eql(1.0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 1.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-02: Sub-Minimum Amount Boundary (₹0.50)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA2_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates minimum transfer amount is ₹1.00', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Minimum transfer amount is ₹1.00');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 0.50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-03: Zero Amount Boundary (₹0.00)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA3_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates amount must be greater than zero', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('greater than zero');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 0\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-04: Negative Amount Boundary (-₹50.00)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA4_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Negative currency amounts strictly rejected', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('greater than zero');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": -50.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-05: Exact Available Balance Boundary",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('dynamic_txn_id', 'TXN_BVA5_' + Date.now());",
+                  "pm.sendRequest(pm.environment.get('baseUrl') + '/api/balance/' + pm.environment.get('sender_id'), function (err, res) {",
+                  "    if (!err && res.json()) {",
+                  "        pm.variables.set('exact_balance_amount', res.json().balance_rupees);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK (Exact balance transfer succeeds)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Sender new balance is exactly ₹0.00', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.sender_new_balance_rupees).to.eql(0.0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": {{exact_balance_amount}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-06: Amount Exceeding Available Balance (+₹1 Boundary)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA6_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates insufficient wallet balance', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Insufficient wallet balance');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 1.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-BVA-07: Extremely Large Transaction Amount (₹10,000,000)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_BVA7_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates amount exceeds limits', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(pm.response.text).to.match(/(exceeds|insufficient)/i);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 10000000\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group C - Input Validation Testing",
+      "description": "Validation of missing attributes, empty IDs, boolean types, non-numeric values, syntax errors, and decimal precision.",
+      "item": [
+        {
+          "name": "TC-IVT-01: Missing Required Field (Amount Omitted)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Response indicates missing field', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('Missing required fields');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_IVT_MISS\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-02: Empty / Whitespace Transaction ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error rejects empty/whitespace ID', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('non-empty string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"   \",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-03: Invalid Data Type (Boolean for Amount)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error rejects boolean value for currency', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('boolean');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_IVT_BOOL\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-04: Non-Numeric String Amount ('five_hundred')",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error rejects non-numeric string', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('numeric');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_IVT_STR\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": \"five_hundred\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-05: Malformed JSON Payload Body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates malformed JSON', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(pm.response.text).to.match(/(json|malformed)/i);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sender_id\": \"U001\", amount: }"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-06: Decimal Precision Exceeded (₹25.125)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error indicates invalid decimal precision (>2 places)', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('decimal');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_IVT_PREC\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 25.125\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-IVT-07: Special Characters in Amount ('₹100#')",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error rejects symbols in numeric field', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('numeric');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_IVT_CHAR\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": \"₹100#\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group D - Integration Testing",
+      "description": "Integration between Flask REST API and SQLite database engine, state persistence, synchronization, and isolation.",
+      "item": [
+        {
+          "name": "TC-INT-01: Flask API and SQLite Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Database reports connected state', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.database).to.eql('connected');",
+                  "    pm.expect(data.status).to.eql('healthy');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"] }
+          }
+        },
+        {
+          "name": "TC-INT-02: User Directory & Schema Mapping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('User list contains at least 2 accounts with correct schema', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data).to.be.an('array');",
+                  "    pm.expect(data.length).to.be.at.least(2);",
+                  "    pm.expect(data[0]).to.have.property('user_id');",
+                  "    pm.expect(data[0]).to.have.property('balance_paise');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+          }
+        },
+        {
+          "name": "TC-INT-03: End-to-End Balance Synchronization Cycle",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_SYNC_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Balances synchronized and returned', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.sender_new_balance_rupees).to.be.a('number');",
+                  "    pm.expect(data.receiver_new_balance_rupees).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{receiver_id}}\",\n  \"receiver_id\": \"{{sender_id}}\",\n  \"amount\": 250\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-INT-04: Transaction Ledger Persistence Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Transactions array contains valid ledger records', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.transactions).to.be.an('array');",
+                  "    pm.expect(data.transactions.length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/transactions/{{sender_id}}", "host": ["{{baseUrl}}"], "path": ["api", "transactions", "{{sender_id}}"] }
+          }
+        },
+        {
+          "name": "TC-INT-05: Failed Transfer Balance Non-Pollution Check",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest(pm.environment.get('baseUrl') + '/api/balance/' + pm.environment.get('sender_id'), function (err, res) {",
+                  "    if (!err && res.json()) {",
+                  "        pm.collectionVariables.set('baseline_pre_fail', res.json().balance_rupees);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 (Failed request)', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Sender balance untouched after rejected transfer', function () {",
+                  "    var baseline = Number(pm.collectionVariables.get('baseline_pre_fail'));",
+                  "    pm.sendRequest(pm.environment.get('baseUrl') + '/api/balance/' + pm.environment.get('sender_id'), function (err, res) {",
+                  "        pm.expect(res.json().balance_rupees).to.eql(baseline);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_NONPOLLUTE\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"U999_NON_EXISTENT\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group E - Database Consistency Testing",
+      "description": "Validation of ACID guarantees: conservation of system money, non-negative checks, ledger debits == credits, and consistency audit.",
+      "item": [
+        {
+          "name": "TC-DB-01: Conservation of Total System Money Invariant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Total system funds match registered account sum', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.is_consistent).to.eql(true);",
+                  "    pm.expect(data.total_system_balance_rupees).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/system/consistency", "host": ["{{baseUrl}}"], "path": ["api", "system", "consistency"] }
+          }
+        },
+        {
+          "name": "TC-DB-02: Non-Negative Balance Constraint Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Zero accounts with negative balance', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.negative_balance_accounts).to.be.an('array');",
+                  "    pm.expect(data.negative_balance_accounts.length).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/system/consistency", "host": ["{{baseUrl}}"], "path": ["api", "system", "consistency"] }
+          }
+        },
+        {
+          "name": "TC-DB-03: Failed Transactions Excluded from Success Ledger",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('All ledger records have valid foreign keys', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.orphan_transactions).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/system/consistency", "host": ["{{baseUrl}}"], "path": ["api", "system", "consistency"] }
+          }
+        },
+        {
+          "name": "TC-DB-04: Ledger Debit-Credit Audit & Foreign Keys",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('System is strictly CONSISTENT', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.status).to.eql('CONSISTENT');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/system/consistency", "host": ["{{baseUrl}}"], "path": ["api", "system", "consistency"] }
+          }
+        },
+        {
+          "name": "TC-DB-05: Database Reset Consistency Verification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Accounts reset to exact baseline (Alice ₹5,000, Bob ₹2,000)', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.accounts[0].balance_rupees).to.eql(5000.0);",
+                  "    pm.expect(data.accounts[1].balance_rupees).to.eql(2000.0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/reset-database", "host": ["{{baseUrl}}"], "path": ["api", "reset-database"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group F - Performance & Latency Testing",
+      "description": "Client-server round-trip latency benchmarking, sequential burst stability, and database write threshold testing.",
+      "item": [
+        {
+          "name": "TC-PERF-01: Single Read Latency Benchmark (< 200ms)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response time is below 200ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/balance/{{sender_id}}", "host": ["{{baseUrl}}"], "path": ["api", "balance", "{{sender_id}}"] }
+          }
+        },
+        {
+          "name": "TC-PERF-02: Server-Side Performance Benchmark Endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Performance benchmark threshold met', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.threshold_met).to.eql(true);",
+                  "    pm.expect(data.avg_latency_ms).to.be.below(250);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"iterations\": 10,\n  \"threshold_ms\": 250\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/test/performance", "host": ["{{baseUrl}}"], "path": ["api", "test", "performance"] }
+          }
+        },
+        {
+          "name": "TC-PERF-03: Atomic Transfer Latency Threshold (< 300ms)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": ["pm.variables.set('dynamic_txn_id', 'TXN_PERF_' + Date.now());"],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Database transaction write completes within 300ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"{{dynamic_txn_id}}\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Group G - Basic Security Testing",
+      "description": "Basic security controls: SQL injection deterrence, clean error message sanitization, CORS configuration, and stored XSS prevention.",
+      "item": [
+        {
+          "name": "TC-SEC-01: SQL Injection Protection in User ID (' OR '1'='1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found (SQL string treated literally)', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('No database records leaked', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.error).to.include('User not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/balance/' OR '1'='1", "host": ["{{baseUrl}}"], "path": ["api", "balance", "' OR '1'='1"] }
+          }
+        },
+        {
+          "name": "TC-SEC-02: SQL Injection Neutralization in Transaction ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Request handled safely without database compromise', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 409]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_SQLI'; DROP TABLE users; --\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-SEC-03: Error Response Sanitization (No Traceback Leakage)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Response does not expose internal stack trace or sqlite errors', function () {",
+                  "    var text = pm.response.text();",
+                  "    pm.expect(text).to.not.include('Traceback');",
+                  "    pm.expect(text).to.not.include('sqlite3.');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_id\": \"TXN_ERR_SANITIZED\",\n  \"sender_id\": \"{{sender_id}}\",\n  \"receiver_id\": \"{{receiver_id}}\",\n  \"amount\": \"invalid_data\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-SEC-04: CORS Preflight & Security Headers Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('CORS and Security headers present', function () {",
+                  "    pm.response.to.have.header('Access-Control-Allow-Origin');",
+                  "    pm.response.to.have.header('X-Content-Type-Options');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "OPTIONS",
+            "url": { "raw": "{{baseUrl}}/api/transfer", "host": ["{{baseUrl}}"], "path": ["api", "transfer"] }
+          }
+        },
+        {
+          "name": "TC-SEC-05: XSS Script Injection Prevention in User Creation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Name is HTML-escaped and does not contain raw script tags', function () {",
+                  "    var data = pm.response.json();",
+                  "    pm.expect(data.user.name).to.not.include('<script>');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<script>alert('xss')</script>\",\n  \"initial_balance\": 1000\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+          }
+        }
+      ]
+    }
+  ]
+}

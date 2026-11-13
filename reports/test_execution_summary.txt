@@ -1,0 +1,83 @@
+================================================================================
+WALLETPAY: AUTOMATED API QUALITY ASSURANCE & TRANSACTION VALIDATION
+Execution Timestamp: Nov 13, 2026, 02:32:05 PM
+Framework: Python Flask REST API & SQLite Invariant Ledger
+================================================================================
+
+EXECUTIVE TEST METRICS:
+--------------------------------------------------------------------------------
+Total Test Cases Executed:    39
+Passed Test Cases:            39
+Failed Test Cases:            0
+Test Pass Rate:               100.0%
+Total Execution Duration:     81.44 ms
+Average API Latency:          1.57 ms
+Maximum API Latency:          9.96 ms
+
+CATEGORY-WISE BREAKDOWN:
+--------------------------------------------------------------------------------
+• Functional Testing               7/7 Passed (100.0%)
+• Boundary Value Analysis          7/7 Passed (100.0%)
+• Input Validation Testing         7/7 Passed (100.0%)
+• Integration Testing              5/5 Passed (100.0%)
+• Database Consistency             5/5 Passed (100.0%)
+• Performance Testing              3/3 Passed (100.0%)
+• Basic Security Testing           5/5 Passed (100.0%)
+
+================================================================================
+INDIVIDUAL TEST RESULTS LOG:
+--------------------------------------------------------------------------------
+[PASS] TC-FT-01   | Successful Peer-to-Peer Transfer                 | HTTP 200 | 9.96 ms
+[PASS] TC-FT-02   | Insufficient Balance Rejection                   | HTTP 400 | 0.86 ms
+[PASS] TC-FT-03   | Invalid Sender Account Rejection                 | HTTP 404 | 1.09 ms
+[PASS] TC-FT-04   | Invalid Receiver Account Rejection               | HTTP 404 | 2.14 ms
+[PASS] TC-FT-05   | Duplicate Transaction ID (Idempotency Guard)     | HTTP 409 | 0.72 ms
+[PASS] TC-FT-06   | Self-Transfer Rejection                          | HTTP 400 | 0.26 ms
+[PASS] TC-FT-07   | Transaction History Ledger Verification          | HTTP 200 | 0.61 ms
+[PASS] TC-BVA-01  | Minimum Valid Amount Boundary (₹1.00)            | HTTP 200 | 6.72 ms
+[PASS] TC-BVA-02  | Sub-Minimum Amount Boundary (₹0.50)              | HTTP 400 | 0.36 ms
+[PASS] TC-BVA-03  | Zero Amount Boundary (₹0.00)                     | HTTP 400 | 0.21 ms
+[PASS] TC-BVA-04  | Negative Amount Boundary (-₹50.00)               | HTTP 400 | 0.2 ms
+[PASS] TC-BVA-05  | Exact Available Balance Boundary                 | HTTP 200 | 7.86 ms
+[PASS] TC-BVA-06  | Amount Exceeding Available Balance (+₹1.00 Boundary) | HTTP 400 | 0.79 ms
+[PASS] TC-BVA-07  | Extremely Large Transaction Amount Boundary      | HTTP 400 | 0.29 ms
+[PASS] TC-IVT-01  | Missing Required Field (Amount Omitted)          | HTTP 400 | 0.21 ms
+[PASS] TC-IVT-02  | Empty/Whitespace Transaction ID Rejection        | HTTP 400 | 0.2 ms
+[PASS] TC-IVT-03  | Invalid Data Type (Boolean Amount)               | HTTP 400 | 0.2 ms
+[PASS] TC-IVT-04  | Non-Numeric String Amount Rejection              | HTTP 400 | 0.2 ms
+[PASS] TC-IVT-05  | Malformed JSON Payload Rejection                 | HTTP 400 | 0.2 ms
+[PASS] TC-IVT-06  | Decimal Precision Boundary (Max 2 Decimal Places / Paise) | HTTP 400 | 0.19 ms
+[PASS] TC-IVT-07  | Special Characters / Symbols in Amount Rejection | HTTP 400 | 0.19 ms
+[PASS] TC-INT-01  | Flask API & SQLite Database Handshake            | HTTP 200 | 0.54 ms
+[PASS] TC-INT-02  | User Accounts Directory & Schema Mapping         | HTTP 200 | 0.51 ms
+[PASS] TC-INT-03  | End-to-End Balance Synchronization Cycle         | HTTP 200 | 6.14 ms
+[PASS] TC-INT-04  | Transaction Ledger Persistence Verification      | HTTP 200 | 0.6 ms
+[PASS] TC-INT-05  | Failed Transfer State Non-Pollution              | HTTP 404 | 1.17 ms
+[PASS] TC-DB-01   | Conservation of Total Money (Invariant Sum)      | HTTP 200 | 5.0 ms
+[PASS] TC-DB-02   | Non-Negative Balance Constraint Verification     | HTTP 200 | 3.0 ms
+[PASS] TC-DB-03   | Transaction History Isolation for Failed Requests | HTTP 200 | 4.0 ms
+[PASS] TC-DB-04   | Ledger Debit-Credit Conservation & Foreign Keys  | HTTP 200 | 0.53 ms
+[PASS] TC-DB-05   | Atomic Rollback on Transaction Interruption      | HTTP 200 | 3.0 ms
+[PASS] TC-PERF-01 | Single Read API Response-Time Benchmark (< 200ms) | HTTP 200 | 0.48 ms
+[PASS] TC-PERF-02 | Sequential Latency Stability (Burst 5 requests, Avg < 250ms) | HTTP 200 | 0.4 ms
+[PASS] TC-PERF-03 | Atomic Transfer API Write Latency (< 300ms)      | HTTP 200 | 6.87 ms
+[PASS] TC-SEC-01  | SQL Injection Protection in User Identifier      | HTTP 404 | 0.85 ms
+[PASS] TC-SEC-02  | SQL Injection Neutralization in Transaction ID   | HTTP 200 | 5.55 ms
+[PASS] TC-SEC-03  | Error Response Sanitization (No Internal Traceback Leakage) | HTTP 400 | 0.37 ms
+[PASS] TC-SEC-04  | CORS Preflight & Security Response Headers       | HTTP 200 | 0.17 ms
+[PASS] TC-SEC-05  | XSS Script Tag Neutralization in User Creation   | HTTP 201 | 6.07 ms
+
+================================================================================
+DEFECT REPORT SUMMARY:
+--------------------------------------------------------------------------------
+Active Defects Detected: 0
+All 39 test assertions PASSED. No active software defects detected.
+
+================================================================================
+REPORT ARTIFACTS:
+--------------------------------------------------------------------------------
+• JSON Summary Report: reports/test_summary.json
+• Text Summary Report: reports/test_execution_summary.txt
+• Postman Collection:  postman/Digital_Wallet_API_Tests.postman_collection.json
+• Postman Environment: postman/Digital_Wallet_Environment.postman_environment.json
+================================================================================
